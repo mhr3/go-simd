@@ -6,48 +6,67 @@
 // used by the Go standard library.
 package cpu
 
-var X86 x86
+// CacheLinePad is used to pad structs to avoid false sharing.
+type CacheLinePad struct{ _ [CacheLinePadSize]byte }
 
-// The booleans in x86 contain the correspondingly named cpuid feature bit.
+// CacheLineSize is the CPU's assumed cache line size.
+// There is currently no runtime detection of the real cache line size
+// so we use the constant per GOARCH CacheLinePadSize as an approximation.
+var CacheLineSize uintptr = CacheLinePadSize
+
+// The booleans in X86 contain the correspondingly named cpuid feature bit.
 // HasAVX and HasAVX2 are only set if the OS does support XMM and YMM registers
 // in addition to the cpuid feature bit being set.
 // The struct is padded to avoid false sharing.
-type x86 struct {
-	_            [CacheLineSize]byte
+var X86 struct {
+	_            CacheLinePad
 	HasAES       bool
 	HasADX       bool
 	HasAVX       bool
 	HasAVX2      bool
+	HasAVX512F   bool
+	HasAVX512BW  bool
+	HasAVX512VL  bool
 	HasBMI1      bool
 	HasBMI2      bool
 	HasERMS      bool
 	HasFMA       bool
 	HasOSXSAVE   bool
 	HasPCLMULQDQ bool
-	HasMOVEBE    bool
 	HasPOPCNT    bool
-	HasSSE2      bool
+	HasRDTSCP    bool
+	HasSHA       bool
 	HasSSE3      bool
 	HasSSSE3     bool
 	HasSSE41     bool
 	HasSSE42     bool
-	_            [CacheLineSize]byte
+	_            CacheLinePad
 }
 
-var ARM64 arm64
-
-// The booleans in arm64 contain the correspondingly named cpu feature bit.
-// The struct is padded to avoid false sharing.
-type arm64 struct {
-	_          [CacheLineSize]byte
-	HasFP      bool
-	HasASIMD   bool
-	HasEVTSTRM bool
+var ARM64 struct {
+	_          CacheLinePad
 	HasAES     bool
 	HasPMULL   bool
 	HasSHA1    bool
 	HasSHA2    bool
+	HasSHA512  bool
 	HasCRC32   bool
 	HasATOMICS bool
-	_          [CacheLineSize]byte
+	HasCPUID   bool
+	IsNeoverse bool
+	_          CacheLinePad
+}
+
+// options contains the cpu debug options that can be used in GODEBUG.
+// Options are arch dependent and are added by the arch specific doinit functions.
+// Features that are mandatory for the specific GOARCH should not be added to options
+// (e.g. SSE2 on amd64).
+var options []option
+
+// Option names should be lower case. e.g. avx instead of AVX.
+type option struct {
+	Name      string
+	Feature   *bool
+	Specified bool // whether feature value was specified in GODEBUG
+	Enable    bool // whether feature should be enabled
 }

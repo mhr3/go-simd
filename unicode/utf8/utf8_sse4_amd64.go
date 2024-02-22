@@ -1,4 +1,4 @@
-// +build !noasm
+//go:build amd64 && !noasm
 
 package utf8
 

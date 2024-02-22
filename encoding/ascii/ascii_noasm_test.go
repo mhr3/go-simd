@@ -1,4 +1,4 @@
-//go:build amd64 && !noasm
+//go:build !amd64 || noasm
 
 package ascii
 
@@ -43,23 +43,13 @@ var validTests = []ValidTest{
 }
 
 func TestValid(t *testing.T) {
-	fnCases := []struct {
-		n  string
-		fn func([]byte) bool
-	}{
-		{"validate_utf8_fast_sse4", validate_ascii_fast_sse4},
-		{"validate_utf8_fast_avx2", validate_ascii_fast_avx2},
-	}
-
-	for _, fn := range fnCases {
-		for _, tc := range validTests {
-			t.Run(fmt.Sprintf("%s(%q)", fn.n, tc.in), func(t *testing.T) {
-				got := fn.fn([]byte(tc.in))
-				if got != tc.exp {
-					t.Errorf("%s(%q) = %v; want %v", fn.n, tc.in, got, tc.exp)
-				}
-			})
-		}
+	for _, tc := range validTests {
+		t.Run(fmt.Sprintf("Valid(%q)", tc.in), func(t *testing.T) {
+			got := Valid([]byte(tc.in))
+			if got != tc.exp {
+				t.Errorf("Valid(%q) = %v; want %v", tc.in, got, tc.exp)
+			}
+		})
 	}
 }
 
@@ -71,14 +61,6 @@ func BenchmarkValid(b *testing.B) {
 		{
 			name:    "go.Valid",
 			validFN: validate_ascii_go,
-		},
-		{
-			name:    "sse4.Valid",
-			validFN: validate_ascii_fast_sse4,
-		},
-		{
-			name:    "avx2.Valid",
-			validFN: validate_ascii_fast_avx2,
 		},
 	}
 	for _, bm := range benchmarks {
